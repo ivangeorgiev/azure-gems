@@ -27,9 +27,9 @@ New-AzResourceGroup -Name $props.ResourceGroupName -Location $props.Location
 # Create Key Vault
 New-AzKeyVault @kvConf
 
-Get-AzKeyVault -VaultName $kvProps.Name -ResourceGroupName $kvProps.ResourceGroupName
+Get-AzKeyVault -VaultName $conf.KeyVaultName -ResourceGroupName $conf.ResourceGroupName
 
-Get-AzKeyVaultSecret -VaultName $kvProps.Name  # -> Forbidden
+Get-AzKeyVaultSecret -VaultName $conf.KeyVaultName  # -> Forbidden
 
 # Add Access Policy
 Get-AzADUser -UserPrincipalName $conf.UserPrincipalName
@@ -40,8 +40,8 @@ $secretValue = ConvertTo-SecureString -String $conf.SecretValue -AsPlainText -Fo
 Set-AzKeyVaultSecret -VaultName $conf.KeyVaultName -Name $conf.SecretName -SecretValue $secretValue
 
 # List Secrets
-Get-AzKeyVaultSecret -VaultName $kvProps.Name
-
+$secret = Get-AzKeyVaultSecret -VaultName $conf.KeyVaultName
+$secret
 
 # Get Secret from Key Vault
 $secret = Get-AzKeyVaultSecret -VaultName $conf.KeyVaultName -Name $conf.SecretName
