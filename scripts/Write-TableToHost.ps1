@@ -6,21 +6,21 @@ Examples
 
 ```powershell
 $Table = @{ 'name' = 'Ivan'; 'age' = 32 }
-WriteTable -Table $Table
+Write-TableToHost -Table $Table
 ```
 
 2. Publish Hashtable content as Azure Pipeline variables
 
 ```powershell
 $Table = @{ 'name' = 'Ivan'; 'age' = 32 }
-WriteTable -Table $Table -Template '##vso[task.setvariable variable=$Key]$Value'
+Write-TableToHost -Table $Table -Template '##vso[task.setvariable variable=$Key]$Value'
 ```
 
 3. Print object properties
 
 ```powershell
 $Table = New-Object -TypeName psobject -Property @{ 'name' = 'Ivan'; 'age' = 32 }
-WriteTable -Table $Table
+Write-TableToHost -Table $Table
 ```
 
 #>
@@ -31,7 +31,7 @@ param (
     [switch]$Sorted
 )
 
-function WriteTable {
+function Write-TableToHost {
     param (
         $Table,
         [String]$Template='[$Key]=[$Value]',
@@ -52,7 +52,7 @@ function WriteTable {
 }
 
 if ($Table) {
-    $invocation = 'WriteTable -Table $Table'
+    $invocation = 'Write-TableToHost -Table $Table'
     if ($Template) {
         $invocation += ' -Template $Template'
     }
