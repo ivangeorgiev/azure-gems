@@ -60,7 +60,7 @@ These settings are available for the application, running in the App Service as 
 
 ```python
 import os
-ENV_CODE = os.environ.get('DMM_ENV_CODE', 'd')
+ENV_CODE = os.environ.get('ENV_CODE', 'd')
 
 print(ENV_CODE)
 ```
@@ -103,8 +103,8 @@ Here is an example of retrieving database password from Key Vault:
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 
-DB_USERNAME = 'dcatd01sqldb-reader'
-KEYVAULT_URL = 'https://dmm-d-01-kv.vault.azure.net'
+DB_USERNAME = 'myapp01sqldb-reader'
+KEYVAULT_URL = 'https://myapp-d-01-kv.vault.azure.net'
 
 az_credential = DefaultAzureCredential()
 secret_client = SecretClient(KEYVAULT_URL, az_credential)
@@ -181,10 +181,10 @@ az webapp config appsettings set -g $ResourceGroupName -n $WebAppName --settings
 ```powershell
 $work_dir = "./work"
 
-$ResourceGroupName = "dmm-${EnvCode}-rg"
-$KeyVaultName = "dmm-${EnvCode}-01-kv"
-$WebAppName = "dmm-${EnvCode}-01-apps"
-$DbUserName = "dmm${EnvCode}01sqldb-operator"
+$ResourceGroupName = "myapp-${EnvCode}-rg"
+$KeyVaultName = "myapp-${EnvCode}-01-kv"
+$WebAppName = "myapp-${EnvCode}-01-apps"
+$DbUserName = "myapp-${EnvCode}-01-sqldb"
 $DbPasswordSecret = (Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $DbUserName)
 
 $Settings = @{
@@ -232,19 +232,19 @@ class AppSettings:
                         default='d')
         self.KEY_VAULT_NAME = self.resolve(
                         env='KEY_VAULT_NAME',
-                        default=f'dmm-{self.ENV_CODE}-01-kv')
+                        default=f'myapp-{self.ENV_CODE}-01-kv')
         self.DB_NAME = self.resolve(
                         env='DB_NAME',
-                        default=f'dmm{self.ENV_CODE}01sqldb')
+                        default=f'myapp{self.ENV_CODE}01sqldb')
         self.DB_SERVER_NAME = self.resolve(
                         env='DB_SERVER_NAME',
-                        default=f'dcat{self.ENV_CODE}01sqlsrv')
+                        default=f'myapp{self.ENV_CODE}01sqlsrv')
         self.DB_SERVER_HOST = self.resolve(
                         env='DB_SERVER_HOST',
                         default=f'{self.DB_SERVER_NAME}.database.windows.net')
         self.DB_USERNAME = self.resolve(
                         env='DB_USERNAME', 
-                        default=f'dmm{self.ENV_CODE}01sqldb-operator')
+                        default=f'myapp{self.ENV_CODE}01sqldb')
         self.DB_PASSWORD = self.resolve(
                         env='DB_PASSWORD', 
                         secret=self.DB_USERNAME)
