@@ -12,7 +12,7 @@ Let's assume a typical Web App, running on Azure:
 ![Typical Web App in Azure](webapp-python-config-4.png)
 
 * **Front-end Web App** provides HTML-based UI. Usually this is a static content, Single Page Application, implemented using Vue.js, Angular, React, etc. It could be hosted in Azure App Service, CDN, Blob, etc.
-* **Back-end API** provides the application business tier functionality. It could be accessed by Front-end Web App, Native Mobile apps, etc. It is hosted in Azure App Service and is subject to our discussion.
+* **Back-end API** provides the application business tier functionality. It could be accessed by Front-end Web App, Native Mobile apps, etc. It is hosted in Azure App Service and can be written in variety of technologies - Python (Flask, Django, FastApi), .Net, Node.js, PHP, Java (Spring) etc. In our scenario it written in python and is major player in our discussion.
 * **Application Key Vault** stores application secrets, e.g. database password.
 * **Application Database** provides persistency to the application. To authenticate to the Application Database, the application needs the technical user credentials, stored in the Application Key Vault. 
 
