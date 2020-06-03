@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    },
+    "faultDomainCount": {
+       "type": "string",
+       "defaultValue": "2",
+    },
+    "updateDomainCount": {
+       "type": "string",
+       "defaultValue": "5"
+    },
+    "name": {
+       "type": "string",
+       "defaultValue": "availabilitySet1"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[parameters('name')]",
+      "apiVersion": "2017-12-01",
+      "location": "[parameters('location')]",
+      "properties": {
+        "platformFaultDomainCount": "[parameters('faultDomainCount')]",
+        "platformUpdateDomainCount": "[parameters('updateDomainCount')]"
+      }
+    }
+  ]
+}
