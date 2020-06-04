@@ -12,7 +12,7 @@ Let's assume a typical Web App, running on Azure:
 ![Typical Web App in Azure](webapp-python-config-4.png)
 
 * **Front-end Web App** provides HTML-based UI. Usually this is a static content, Single Page Application, implemented using Vue.js, Angular, React, etc. It could be hosted in Azure App Service, CDN, Blob, etc.
-* **Back-end API** provides the application business tier functionality. It could be accessed by Front-end Web App, Native Mobile apps, etc. It is hosted in Azure App Service and is subject to our discussion.
+* **Back-end API** provides the application business tier functionality. It could be accessed by Front-end Web App, Native Mobile apps, etc. It is hosted in Azure App Service and can be written in variety of technologies - Python (Flask, Django, FastApi), .Net, Node.js, PHP, Java (Spring) etc. In our scenario it written in python and is major player in our discussion.
 * **Application Key Vault** stores application secrets, e.g. database password.
 * **Application Database** provides persistency to the application. To authenticate to the Application Database, the application needs the technical user credentials, stored in the Application Key Vault. 
 
@@ -60,7 +60,7 @@ These settings are available for the application, running in the App Service as 
 
 ```python
 import os
-ENV_CODE = os.environ.get('DMM_ENV_CODE', 'd')
+ENV_CODE = os.environ.get('ENV_CODE', 'd')
 
 print(ENV_CODE)
 ```
@@ -103,8 +103,8 @@ Here is an example of retrieving database password from Key Vault:
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 
-DB_USERNAME = 'dcatd01sqldb-reader'
-KEYVAULT_URL = 'https://dmm-d-01-kv.vault.azure.net'
+DB_USERNAME = 'myapp01sqldb-reader'
+KEYVAULT_URL = 'https://myapp-d-01-kv.vault.azure.net'
 
 az_credential = DefaultAzureCredential()
 secret_client = SecretClient(KEYVAULT_URL, az_credential)
@@ -218,10 +218,10 @@ az webapp config appsettings set -g $ResourceGroupName -n $WebAppName --settings
 ```powershell
 $work_dir = "./work"
 
-$ResourceGroupName = "dmm-${EnvCode}-rg"
-$KeyVaultName = "dmm-${EnvCode}-01-kv"
-$WebAppName = "dmm-${EnvCode}-01-apps"
-$DbUserName = "dmm${EnvCode}01sqldb-operator"
+$ResourceGroupName = "myapp-${EnvCode}-rg"
+$KeyVaultName = "myapp-${EnvCode}-01-kv"
+$WebAppName = "myapp-${EnvCode}-01-apps"
+$DbUserName = "myapp-${EnvCode}-01-sqldb"
 $DbPasswordSecret = (Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $DbUserName)
 
 $Settings = @{
@@ -269,19 +269,19 @@ class AppSettings:
                         default='d')
         self.KEY_VAULT_NAME = self.resolve(
                         env='KEY_VAULT_NAME',
-                        default=f'dmm-{self.ENV_CODE}-01-kv')
+                        default=f'myapp-{self.ENV_CODE}-01-kv')
         self.DB_NAME = self.resolve(
                         env='DB_NAME',
-                        default=f'dmm{self.ENV_CODE}01sqldb')
+                        default=f'myapp{self.ENV_CODE}01sqldb')
         self.DB_SERVER_NAME = self.resolve(
                         env='DB_SERVER_NAME',
-                        default=f'dcat{self.ENV_CODE}01sqlsrv')
+                        default=f'myapp{self.ENV_CODE}01sqlsrv')
         self.DB_SERVER_HOST = self.resolve(
                         env='DB_SERVER_HOST',
                         default=f'{self.DB_SERVER_NAME}.database.windows.net')
         self.DB_USERNAME = self.resolve(
                         env='DB_USERNAME', 
-                        default=f'dmm{self.ENV_CODE}01sqldb-operator')
+                        default=f'myapp{self.ENV_CODE}01sqldb')
         self.DB_PASSWORD = self.resolve(
                         env='DB_PASSWORD', 
                         secret=self.DB_USERNAME)
