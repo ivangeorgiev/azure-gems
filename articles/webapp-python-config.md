@@ -160,7 +160,44 @@ Set-AzKeyVaultAccessPolicy -VaultName $KeyVaultName -ObjectId $PrincipalId -Perm
 
 
 
-#### Define App Service Application Settings
+#### Define App Service Application Settings in Deployment Task
+
+This is probably the easiest way to maintain App Service application settings. It needs two steps:
+
+1. Define application settings value as pipeline variables
+2. Apply application settings to the App Service
+
+##### Define Application setting values
+
+To prepare all necessary pipeline variables you can use for this purpose Azure PowerShell task:
+
+```powershell
+$KeyVaultName = "myapp-${EnvCode}-01-kv"
+$DbUserName = "myapp-${EnvCode}-01-sqldb-reader"
+
+$DbPasswordSecret = (Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $DbUserName)
+$DbPasswordSecretId = $DbPasswordSecret.Id
+
+Write-Host "##vso[task.setvariable variable=KeyVaultName]$KeyVaultName"
+Write-Host "##vso[task.setvariable variable=DbUserName]$DbUserName"
+Write-Host "##vso[task.setvariable variable=DbPasswordSecretId]$BuildName"
+```
+
+
+
+##### Apply application settings to App Service
+
+I use the `Azure App Service deploy` task to deploy the Web App. The task provides opportunity to also update the application settings.
+
+Add following to the `App settings` text box:
+
+```
+-ENV_CODE "$(EnvCode)" -KEY_VAULT_NAME "$(KeyVaultName)" -DB_USERNAME $(DbUserName) -DB_PASSWORD "@Microsoft.KeyVault(SecretUri=$(DbPasswordSecretId))"
+```
+
+During deployment these settings will be applied.
+
+#### Define App Service Application Settings (Az CLI)
 
 In this example I use PowerShell and Azure CLI to update the App Service application settings
 
