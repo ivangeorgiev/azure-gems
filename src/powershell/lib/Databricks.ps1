@@ -259,14 +259,17 @@ Function Submit-DatabricksNotebook() {
     [cmdletbinding()]
     param(
         [Parameter(Mandatory = $true)][String]$NotebookPath,
-        [Parameter(Mandatory = $true)][String]$ClusterId,
+        [String]$RunName,
+        [String]$ClusterId,
         [Hashtable]$NotebookParams
     )
 
     If (!$NotebookParams) { $NotebookParams = @{} }
+    If (!$RunName) { $RunName = "PSSubmit-$NotebookPath" }
+    If (!$ClusterId) { $ClusterId = $Global:DoDatabricksClusterId }
 
     $Data = @{
-        run_name = 'Not-your-business';
+        run_name = $RunName;
         existing_cluster_id = $ClusterId;
         libraries = @();
         notebook_task = @{
@@ -327,20 +330,20 @@ Function Wait-DatabricksRun() {
 
     $ExitStates = @('TERMINATED', 'SKIPPED', 'INTERNAL_ERROR')
     $ExpiresAt = [convert]::ToDouble( (Get-Date -UFormat %s) ) + $TimeoutSeconds
+    $RunMeta = (Get-DatabricksRun -RunId $RunId)
+    Write-Verbose "Waiting for run $RunId ($($RunMeta.run_page_url))"
     While (1) {
-        $RunMeta = (Get-DatabricksRun -RunId $RunId)
         $RunState = $RunMeta.state.life_cycle_state
         If ($RunState -in $ExitStates) {
             Write-Verbose "Run $RunId finished with state $RunState"
             break
         }
-        Write-Verbose (Get-Date -UFormat %s)
-        Write-Verbose "-- $ExpiresAt"
         If ( [convert]::ToDouble( (Get-Date -UFormat %s) ) -gt $ExpiresAt ) {
             Throw "Timeout of $TimeoutSeconds reached for run $RunId. Last state was $($RunMeta.state.life_cycle_state). Giving up."
         }
-        Write-Verbose "Run $RunId is in state $RunState - not final. Sleeping for $WaitIntervalMilliseconds ms"
+        Write-Verbose "Run $RunId is not in final state ($RunState). Sleeping for $WaitIntervalMilliseconds ms"
         Start-Sleep -Milliseconds $WaitIntervalMilliseconds
+        $RunMeta = (Get-DatabricksRun -RunId $RunId)
     }
     Return $RunMeta
 }
