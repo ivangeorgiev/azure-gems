@@ -55,7 +55,7 @@ If (!$DatabricksAccessToken) {
     Throw "Cannot validate Databricks bearer token. Please provide a bearer token using -DatabricksAccessToken or a secret name using -DatabricksAccessTokenSecret and -KeyVaultName"  
 }
 
-Connect-Databricks -AccessToken $DatabricksAccessToken
+Connect-Databricks -BearerToken $DatabricksAccessToken
 
 Write-Verbose "... Copy key secrets from $KeyVaultName to Databricks scope $DatabricksScopeName" 
 

@@ -39,22 +39,24 @@ function Get-DatabricksExpectErrorCode($Exception, $ErrorCode, [bool]$Forced) {
 
 function Connect-Databricks {
     param(
-        [string]
-        $AccessToken,
+        [Parameter(Mandatory = $true)]
+        [string]$BearerToken,
 
-        [string]
-        $AzureRegion = 'westeurope'
+        [string]$URI = "https://westeurope.azuredatabricks.net",
+
+        [String]$ClusterId
     )
 
-    $Global:DoDatabricksAccessToken = $AccessToken
-    $Global:DoDatabricksURI = "https://$AzureRegion.azuredatabricks.net"
+    $Global:DoDatabricksBearerToken = $BearerToken
+    $Global:DoDatabricksURI = $URI
+    $Global:DoDatabricksClusterId = $ClusterId
     $Global:DoDatabricksHeaders = @{
-        "Authorization"="Bearer $AccessToken"
+        "Authorization"="Bearer $BearerToken"
     }
 }
 
 function Get-DatabricksHeaders {
-    if (!$Global:DoDatabricksAccessToken -or !$Global:DoDatabricksHeaders) {
+    if (!$Global:DoDatabricksHeaders) {
         Throw "Databricks is not connected. Consider using Connect-Databricks first"
     }
 
@@ -76,8 +78,7 @@ function Get-DatabricksCluster([string]$ClusterName) {
 
 function Ensure-DatabricksCluster {
     param(
-        [string]
-        $ClusterName,
+        [string]$ClusterName,
         
         [string]$SparkVersion = "6.4.x-scala2.11",
         [string]$WorkerNodeType = "Standard_DS3_v2",
@@ -87,6 +88,7 @@ function Ensure-DatabricksCluster {
         [int]$MaxWorkers = 2
     )
 
+    $Headers = Get-DatabricksHeaders
     $CurrentCluster = Get-DatabricksCluster -ClusterName $ClusterName
     if ($CurrentCluster) {
         if ($CurrentCluster -is [array]) {
@@ -109,8 +111,6 @@ function Ensure-DatabricksCluster {
        }
     }
 
-    $Headers = Get-DatabricksHeaders
-
     $Body = $ClusterSettings | ConvertTo-Json -Depth 10
     $RequestUri = "${Global:DoDatabricksURI}/api/2.0/clusters/create"
     $RequestUri = [uri]::EscapeUriString($RequestUri)
@@ -120,10 +120,6 @@ function Ensure-DatabricksCluster {
 }
 
 function Get-DatabricksSecretScope([string]$ScopeName) {
-    if (!$Global:DoDatabricksAccessToken -or !$Global:DoDatabricksHeaders) {
-        Throw "Databricks is not connected. Consider using Connect-Databricks first"
-    }
-
     $Headers = Get-DatabricksHeaders
 
     $RequestUri = "${Global:DoDatabricksURI}/api/2.0/secrets/scopes/list"
@@ -138,21 +134,16 @@ function Get-DatabricksSecretScope([string]$ScopeName) {
 
 function Create-DatabricksSecretScope {
     param(
-        [string]
-        $ScopeName,
-        $ManagePrincipal = 'users',
-        [switch] $Force
+        [string]$ScopeName,
+        [string]$ManagePrincipal = 'users',
+        [switch]$Force
     )
-    if (!$Global:DoDatabricksAccessToken -or !$Global:DoDatabricksHeaders) {
-        Throw "Databricks is not connected. Consider using Connect-Databricks first"
-    }
+    $Headers = Get-DatabricksHeaders
 
     $ScopeSettings = @{
        "scope" = $ScopeName;
        "initial_manage_principal" = $ManagePrincipal;
     }
-
-    $Headers = Get-DatabricksHeaders
 
     $Body = $ScopeSettings | ConvertTo-Json -Depth 10
     $RequestUri = "${Global:DoDatabricksURI}/api/2.0/secrets/scopes/create"
@@ -166,15 +157,11 @@ function Create-DatabricksSecretScope {
 
 
 function Remove-DatabricksSecretScope([string]$ScopeName, [switch]$Force) {
-    if (!$Global:DoDatabricksAccessToken -or !$Global:DoDatabricksHeaders) {
-        Throw "Databricks is not connected. Consider using Connect-Databricks first"
-    }
+    $Headers = Get-DatabricksHeaders
 
     $ScopeSettings = @{
        "scope" = $ScopeName;
     }
-
-    $Headers = Get-DatabricksHeaders
 
     $Body = $ScopeSettings | ConvertTo-Json -Depth 10
     $RequestUri = "${Global:DoDatabricksURI}/api/2.0/secrets/scopes/delete"
@@ -187,31 +174,30 @@ function Remove-DatabricksSecretScope([string]$ScopeName, [switch]$Force) {
 }
 
 
-function Get-DatabricksSecret([string]$ScopeName, [string]$SecretName, [string]$SecretValue) {
-    if (!$Global:DoDatabricksAccessToken -or !$Global:DoDatabricksHeaders) {
-        Throw "Databricks is not connected. Consider using Connect-Databricks first"
-    }
-
+function Get-DatabricksSecret() {
+    param(
+        [string]$ScopeName, 
+        [string]$SecretName
+    )
     $Headers = Get-DatabricksHeaders
 
     $RequestUri = "${Global:DoDatabricksURI}/api/2.0/secrets/list?scope=$ScopeName"
     $RequestUri = [uri]::EscapeUriString($RequestUri)
     $Result = Invoke-RestMethod -Uri "$RequestUri" -Method 'GET' -Headers $Headers
+    if ($SecretName) {
+        return ($Result.secrets | Where-Object -Property key -EQ $SecretName)
+    }
     return $Result
 }
 
 function Set-DatabricksSecret([string]$ScopeName, [string]$SecretName, [string]$SecretValue) {
-    if (!$Global:DoDatabricksAccessToken -or !$Global:DoDatabricksHeaders) {
-        Throw "Databricks is not connected. Consider using Connect-Databricks first"
-    }
+    $Headers = Get-DatabricksHeaders
 
     $SecretSettings = @{
        "scope" = $ScopeName;
        "key" = $SecretName;
        "string_value" = $SecretValue;
     }
-
-    $Headers = Get-DatabricksHeaders
 
     $Body = $SecretSettings | ConvertTo-Json -Depth 10
     $RequestUri = "${Global:DoDatabricksURI}/api/2.0/secrets/put"
@@ -221,16 +207,12 @@ function Set-DatabricksSecret([string]$ScopeName, [string]$SecretName, [string]$
 
 
 function Remove-DatabricksSecret([string]$ScopeName, [string]$SecretName, [switch]$Force) {
-    if (!$Global:DoDatabricksAccessToken -or !$Global:DoDatabricksHeaders) {
-        Throw "Databricks is not connected. Consider using Connect-Databricks first"
-    }
+    $Headers = Get-DatabricksHeaders
 
     $SecretSettings = @{
        "scope" = $ScopeName;
        "key" = $SecretName;
     }
-
-    $Headers = Get-DatabricksHeaders
 
     $Body = $SecretSettings | ConvertTo-Json -Depth 10
     $RequestUri = "${Global:DoDatabricksURI}/api/2.0/secrets/delete"
@@ -241,3 +223,125 @@ function Remove-DatabricksSecret([string]$ScopeName, [string]$SecretName, [switc
         Get-DatabricksExpectErrorCode -Exception $_ -ErrorCode 'RESOURCE_DOES_NOT_EXIST' -Forced $Force
     }
 }
+
+
+
+function List-DatabricksRuns() {
+    [cmdletbinding()]
+    param(
+        [Int]$JobId,
+        [Int]$Offset,
+        [Int]$Limit,
+        [Bool]$ActiveOnly,
+        [Bool]$CompletedOnly
+    )
+
+    $Headers = Get-DatabricksHeaders
+
+    $Params = @()
+    If ($JobId) { $Params += "job_id=$JobId" }
+    If ($Offset) { $Params += "offset=$Offset" }
+    If ($Limit) { $Params += "limit=$Limit" }
+    If ($ActiveOnly) { $Params += "active_only=true" }
+    If ($CompletedOnly) { $Params += "completed_only=true" }
+
+    $RequestUri = "${Global:DoDatabricksURI}/api/2.0/jobs/runs/list"
+    If ($Params) {
+        $RequestUri += "?$($Params -join '&')"
+    }
+    $RequestUri = [uri]::EscapeUriString($RequestUri)
+    $Result = Invoke-RestMethod -Uri "$RequestUri" -Method 'GET' -Headers $Headers
+    Return $Result
+}
+
+
+Function Submit-DatabricksNotebook() {
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $true)][String]$NotebookPath,
+        [Parameter(Mandatory = $true)][String]$ClusterId,
+        [Hashtable]$NotebookParams
+    )
+
+    If (!$NotebookParams) { $NotebookParams = @{} }
+
+    $Data = @{
+        run_name = 'Not-your-business';
+        existing_cluster_id = $ClusterId;
+        libraries = @();
+        notebook_task = @{
+            notebook_path = $NotebookPath;
+            base_parameters = $NotebookParams
+        }
+
+    }
+
+    $Body = $Data | ConvertTo-Json -Depth 10
+    $RequestUri = "${Global:DoDatabricksURI}/api/2.0/jobs/runs/submit"
+    $RequestUri = [uri]::EscapeUriString($RequestUri)
+    $Result = Invoke-RestMethod -Uri "$RequestUri" -Method 'POST' -Headers $Headers -Body $Body
+    Return $Result
+}
+
+
+Function Get-DatabricksRunOutput() {
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $true)][Int]$RunId
+    )
+    $Headers = Get-DatabricksHeaders
+
+
+    $RequestUri = "${Global:DoDatabricksURI}/api/2.0/jobs/runs/get-output?run_id=$RunId"
+    $RequestUri = [uri]::EscapeUriString($RequestUri)
+    $Result = Invoke-RestMethod -Uri "$RequestUri" -Method 'GET' -Headers $Headers
+    If ($Result.notebook_output.result) {
+        $Result.notebook_output.result = (ConvertFrom-Json $Result.notebook_output.result)
+    }
+    Return $Result
+}
+
+
+Function Get-DatabricksRun() {
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $true)][Int]$RunId
+    )
+    $Headers = Get-DatabricksHeaders
+
+
+    $RequestUri = "${Global:DoDatabricksURI}/api/2.0/jobs/runs/get?run_id=$RunId"
+    $RequestUri = [uri]::EscapeUriString($RequestUri)
+    $Result = Invoke-RestMethod -Uri "$RequestUri" -Method 'GET' -Headers $Headers
+    Return $Result
+}
+
+
+Function Wait-DatabricksRun() {
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $true)][Int]$RunId,
+        [Float]$TimeoutSeconds=300.0,
+        [Float]$WaitIntervalMilliseconds=3000
+    )
+
+    $ExitStates = @('TERMINATED', 'SKIPPED', 'INTERNAL_ERROR')
+    $ExpiresAt = [convert]::ToDouble( (Get-Date -UFormat %s) ) + $TimeoutSeconds
+    While (1) {
+        $RunMeta = (Get-DatabricksRun -RunId $RunId)
+        $RunState = $RunMeta.state.life_cycle_state
+        If ($RunState -in $ExitStates) {
+            Write-Verbose "Run $RunId finished with state $RunState"
+            break
+        }
+        Write-Verbose (Get-Date -UFormat %s)
+        Write-Verbose "-- $ExpiresAt"
+        If ( [convert]::ToDouble( (Get-Date -UFormat %s) ) -gt $ExpiresAt ) {
+            Throw "Timeout of $TimeoutSeconds reached for run $RunId. Last state was $($RunMeta.state.life_cycle_state). Giving up."
+        }
+        Write-Verbose "Run $RunId is in state $RunState - not final. Sleeping for $WaitIntervalMilliseconds ms"
+        Start-Sleep -Milliseconds $WaitIntervalMilliseconds
+    }
+    Return $RunMeta
+}
+
