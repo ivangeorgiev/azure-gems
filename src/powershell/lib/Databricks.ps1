@@ -339,7 +339,7 @@ Function Wait-DatabricksRun() {
             break
         }
         If ( [convert]::ToDouble( (Get-Date -UFormat %s) ) -gt $ExpiresAt ) {
-            Throw "Timeout of $TimeoutSeconds reached for run $RunId. Last state was $($RunMeta.state.life_cycle_state). Giving up."
+            Throw "Timeout of $TimeoutSeconds seconds reached for run $RunId. Last state was $($RunMeta.state.life_cycle_state). Giving up."
         }
         Write-Verbose "Run $RunId is not in final state ($RunState). Sleeping for $WaitIntervalMilliseconds ms"
         Start-Sleep -Milliseconds $WaitIntervalMilliseconds
