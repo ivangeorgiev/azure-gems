@@ -348,3 +348,18 @@ Function Wait-DatabricksRun() {
     Return $RunMeta
 }
 
+
+function Export-DatabricksRun() {
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $true)][Int]$RunId
+    )
+    $Headers = Get-DatabricksHeaders
+
+
+    $RequestUri = "${Global:DoDatabricksURI}/api/2.0/jobs/runs/export?run_id=$RunId"
+    $RequestUri = [uri]::EscapeUriString($RequestUri)
+    $Result = Invoke-RestMethod -Uri "$RequestUri" -Method 'GET' -Headers $Headers
+    Return ($Result.views)
+}
+
