@@ -264,6 +264,8 @@ Function Submit-DatabricksNotebook() {
         [Hashtable]$NotebookParams
     )
 
+    $Headers = Get-DatabricksHeaders
+
     If (!$NotebookParams) { $NotebookParams = @{} }
     If (!$RunName) { $RunName = "PSSubmit-$NotebookPath" }
     If (!$ClusterId) { $ClusterId = $Global:DoDatabricksClusterId }

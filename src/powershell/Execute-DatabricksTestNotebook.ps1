@@ -22,7 +22,7 @@ Here is an example running a Databricks test notebook and saving all information
 into files.
 
 ```powershell
-.\Run-DatabricksTestNotebook.ps1 `
+.\Execute-DatabricksTestNotebook.ps1 `
             -NotebookPath '/pytest-databricks-examples/Test-AssertEquals-DataFrames' `
             -BearerToken $Env:DATABRICKS_BEARER_TOKEN `
             -ClusterId $Env:DATABRICKS_CLUSTER_ID `
@@ -41,7 +41,7 @@ Here is an example running a Databricks test notebook with bearer token and clus
 from Key Vault.
 
 ```powershell
-.\Run-DatabricksTestNotebook.ps1 `
+.\Execute-DatabricksTestNotebook.ps1 `
             -NotebookPath '/pytest-databricks-examples/Test-AssertEquals-DataFrames' `
             -BearerTokenSecretName 'databricks-bearer-token' `
             -ClusterIdSecretName 'databricks-cluster-id' `
@@ -110,17 +110,24 @@ If (!$ClusterId) {
 
 If (!$RunName) { $RunName = "PSExecTest-$NotebookPath" }
 
+Write-Verbose $BearerToken
+Write-Verbose $ClusterId
 
 Connect-Databricks -BearerToken $BearerToken -ClusterId $ClusterId -URI $URI
 
 $RunId = (Submit-DatabricksNotebook -NotebookPath $NotebookPath -RunName $RunName).run_id
+If (!$RunId) {
+	Throw 'Notebook submit failed.'
+}
+If ($WriteRunUri) {
+    $RunMeta = (Get-DatabricksRun -RunId $RunId)
+    Write-Host $RunMeta.run_page_url
+}
+
 $RunMeta = (Wait-DatabricksRun -RunId $RunId -TimeoutSeconds $TimeoutSeconds -WaitIntervalMilliseconds $WaitIntervalMilliseconds)
 
 $RunResult = (Get-DatabricksRunOutput -RunId $RunId).notebook_output.result
 
-If ($WriteRunUri) {
-    Write-Host $RunMeta.run_page_url
-}
 
 If ($WriteTestOutput) {
     Write-Host $RunResult.run_output
